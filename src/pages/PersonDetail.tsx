@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Mail, Phone, Building2, Calendar, QrCode as QrCodeIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import QRCode from "qrcode";
+import { generateStyledQRCode } from "@/lib/qrcode-generator";
 
 interface Person {
   id: string;
@@ -53,10 +53,14 @@ export default function PersonDetail() {
       if (personError) throw personError;
       setPerson(personData);
 
-      // Generate QR Code
-      const qrData = await QRCode.toDataURL(personData.qr_code, {
-        width: 300,
-        margin: 2,
+      const qrData = await generateStyledQRCode({
+        data: personData.qr_code,
+        size: 300,
+        colorDark: "#FFB800",
+        colorLight: "#FFFFFF",
+        bodyType: "rounded",
+        eyeFrameType: "rounded",
+        eyeBallType: "rounded",
       });
       setQrDataUrl(qrData);
 

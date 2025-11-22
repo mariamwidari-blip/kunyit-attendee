@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { QrCode, User, Loader2, CheckCircle } from "lucide-react";
+import { QrCode, User, Loader2, CheckCircle, Camera } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import QRScanner from "@/components/QRScanner";
 
 interface Person {
   id: string;
@@ -87,13 +88,17 @@ export default function Attendance() {
 
   const handleQRSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await processQRCode(qrInput.trim());
+  };
+
+  const processQRCode = async (qrCode: string) => {
     setLoading(true);
 
     try {
       const { data: person } = await supabase
         .from("people")
         .select("id")
-        .eq("qr_code", qrInput.trim())
+        .eq("qr_code", qrCode)
         .eq("is_active", true)
         .single();
 
@@ -110,6 +115,12 @@ export default function Attendance() {
     }
   };
 
+  const handleScanSuccess = (decodedText: string) => {
+    setScanning(false);
+    setQrInput(decodedText);
+    processQRCode(decodedText);
+  };
+
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPerson) {
@@ -121,6 +132,8 @@ export default function Attendance() {
 
   return (
     <div className="space-y-4">
+      {scanning && <QRScanner onScan={handleScanSuccess} onClose={() => setScanning(false)} />}
+
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
         <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
@@ -147,37 +160,57 @@ export default function Attendance() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleQRSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="qrcode">Masukkan Kode QR</Label>
-                  <Input
-                    id="qrcode"
-                    type="text"
-                    placeholder="HG050-XXX-..."
-                    value={qrInput}
-                    onChange={(e) => setQrInput(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Scan QR code atau ketik kode manual
-                  </p>
+              <div className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setScanning(true)}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Buka Kamera
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">atau</span>
+                  </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Memproses...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Catat Kehadiran
-                    </>
-                  )}
-                </Button>
-              </form>
+                <form onSubmit={handleQRSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="qrcode">Masukkan Kode QR Manual</Label>
+                    <Input
+                      id="qrcode"
+                      type="text"
+                      placeholder="HG050-XXX-..."
+                      value={qrInput}
+                      onChange={(e) => setQrInput(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ketik kode QR secara manual
+                    </p>
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Catat Kehadiran
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
