@@ -1,0 +1,231 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { QrCode, User, Loader2, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Person {
+  id: string;
+  name: string;
+  qr_code: string;
+}
+
+export default function Attendance() {
+  const [qrInput, setQrInput] = useState("");
+  const [selectedPerson, setSelectedPerson] = useState("");
+  const [people, setPeople] = useState<Person[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+    loadPeople();
+  }, []);
+
+  const loadPeople = async () => {
+    const { data } = await supabase
+      .from("people")
+      .select("id, name, qr_code")
+      .eq("is_active", true)
+      .order("name");
+    setPeople(data || []);
+  };
+
+  const markAttendance = async (personId: string, method: "qr_scan" | "manual") => {
+    setLoading(true);
+    try {
+      const { data: person } = await supabase
+        .from("people")
+        .select("name")
+        .eq("id", personId)
+        .single();
+
+      if (!person) {
+        toast.error("Orang tidak ditemukan");
+        return;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data: existingAttendance } = await supabase
+        .from("attendance_records")
+        .select("id")
+        .eq("person_id", personId)
+        .gte("check_in_time", today.toISOString())
+        .single();
+
+      if (existingAttendance) {
+        toast.error(`${person.name} sudah absen hari ini`);
+        return;
+      }
+
+      const { error } = await supabase.from("attendance_records").insert({
+        person_id: personId,
+        method,
+      });
+
+      if (error) throw error;
+
+      toast.success(`${person.name} berhasil absen!`, {
+        icon: <CheckCircle className="h-5 w-5 text-success" />,
+      });
+      
+      setQrInput("");
+      setSelectedPerson("");
+    } catch (error: any) {
+      console.error("Error marking attendance:", error);
+      toast.error("Gagal mencatat absensi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQRSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data: person } = await supabase
+        .from("people")
+        .select("id")
+        .eq("qr_code", qrInput.trim())
+        .eq("is_active", true)
+        .single();
+
+      if (!person) {
+        toast.error("QR Code tidak valid");
+        setLoading(false);
+        return;
+      }
+
+      await markAttendance(person.id, "qr_scan");
+    } catch (error) {
+      toast.error("QR Code tidak ditemukan");
+      setLoading(false);
+    }
+  };
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPerson) {
+      toast.error("Pilih orang terlebih dahulu");
+      return;
+    }
+    await markAttendance(selectedPerson, "manual");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
+        <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
+      </div>
+
+      <Tabs defaultValue="qr" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="qr" className="gap-2">
+            <QrCode className="h-4 w-4" />
+            Scan QR
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="gap-2">
+            <User className="h-4 w-4" />
+            Manual
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="qr">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5" />
+                Scan QR Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleQRSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="qrcode">Masukkan Kode QR</Label>
+                  <Input
+                    id="qrcode"
+                    type="text"
+                    placeholder="HG050-XXX-..."
+                    value={qrInput}
+                    onChange={(e) => setQrInput(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Scan QR code atau ketik kode manual
+                  </p>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Catat Kehadiran
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Absensi Manual
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleManualSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="person">Pilih Orang</Label>
+                  <Select value={selectedPerson} onValueChange={setSelectedPerson}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih orang..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {people.map((person) => (
+                        <SelectItem key={person.id} value={person.id}>
+                          {person.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Catat Kehadiran
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
