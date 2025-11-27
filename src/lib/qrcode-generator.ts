@@ -56,11 +56,15 @@ export async function generateStyledQRCode(config: QRCodeConfig): Promise<string
   };
 
   try {
-    const response = await fetch("https://api.qrcode-monkey.com/qr/custom", {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-qrcode`;
+    const headers = {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+
+    const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: headers,
       body: JSON.stringify(requestBody),
     });
 
