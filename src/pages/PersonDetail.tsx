@@ -56,11 +56,11 @@ export default function PersonDetail() {
       const qrData = await generateStyledQRCode({
         data: personData.qr_code,
         size: 300,
-        colorDark: "#FFB800",
+        colorDark: "#1A1A1A",
         colorLight: "#FFFFFF",
-        bodyType: "rounded",
-        eyeFrameType: "rounded",
-        eyeBallType: "rounded",
+        bodyType: "dot",
+        eyeFrameType: "frame13",
+        eyeBallType: "ball15",
       });
       setQrDataUrl(qrData);
 
