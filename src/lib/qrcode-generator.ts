@@ -5,9 +5,9 @@ export interface QRCodeConfig {
   colorLight?: string;
   logo?: string;
   logoMode?: "default" | "clean";
-  bodyType?: "square" | "dot" | "rounded" | "extra-rounded" | "diamond";
-  eyeFrameType?: "square" | "dot" | "rounded" | "extra-rounded";
-  eyeBallType?: "square" | "dot" | "rounded" | "extra-rounded";
+  bodyType?: string;
+  eyeFrameType?: string;
+  eyeBallType?: string;
   gradientType?: "linear" | "radial";
   gradientOnEyes?: boolean;
 }
@@ -15,12 +15,13 @@ export interface QRCodeConfig {
 export async function generateStyledQRCode(config: QRCodeConfig): Promise<string> {
   const {
     data,
-    size = 300,
-    colorDark = "#FFB800",
-    colorLight = "#FFFFFF",
-    bodyType = "rounded",
-    eyeFrameType = "rounded",
-    eyeBallType = "rounded",
+    size = 1000,
+    colorDark = "#1A1A1A",
+    colorLight = "#FFF3DB",
+    bodyType = "dot",
+    eyeFrameType = "frame13",
+    eyeBallType = "ball15",
+    logo = "3b414c65127d1792c2650053e68d915c3c866130.jpg",
   } = config;
 
   const requestBody = {
@@ -40,18 +41,18 @@ export async function generateStyledQRCode(config: QRCodeConfig): Promise<string
       eye1Color: colorDark,
       eye2Color: colorDark,
       eye3Color: colorDark,
-      eyeBall1Color: colorDark,
-      eyeBall2Color: colorDark,
-      eyeBall3Color: colorDark,
+      eyeBall1Color: "#ED9C23",
+      eyeBall2Color: "#ED9C23",
+      eyeBall3Color: "#ED9C23",
       gradientColor1: "",
       gradientColor2: "",
       gradientType: "linear",
       gradientOnEyes: false,
-      logo: "",
+      logo: logo,
       logoMode: "default",
     },
     size: size,
-    download: false,
+    download: "false",
     file: "png",
   };
 
@@ -69,6 +70,8 @@ export async function generateStyledQRCode(config: QRCodeConfig): Promise<string
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("QR code generation failed:", errorText);
       throw new Error("Failed to generate QR code");
     }
 
