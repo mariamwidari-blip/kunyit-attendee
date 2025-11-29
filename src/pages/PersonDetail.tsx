@@ -4,7 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Mail, Phone, Building2, Calendar, QrCode as QrCodeIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, Mail, Phone, Building2, Calendar, QrCode as QrCodeIcon, Trash2, Loader2, Edit } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { generateStyledQRCode } from "@/lib/qrcode-generator";
@@ -35,6 +45,8 @@ export default function PersonDetail() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -80,6 +92,29 @@ export default function PersonDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!person) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("people")
+        .update({ is_active: false })
+        .eq("id", person.id);
+
+      if (error) throw error;
+
+      toast.success("Orang berhasil dihapus");
+      navigate("/people");
+    } catch (error: any) {
+      console.error("Error deleting person:", error);
+      toast.error(error.message || "Gagal menghapus orang");
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -112,10 +147,38 @@ export default function PersonDetail() {
 
   return (
     <div className="space-y-4">
-      <Button variant="ghost" onClick={() => navigate("/people")}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Kembali
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate("/people")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Kembali
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/edit-person/${id}`)}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Menghapus...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Hapus
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
 
       <Card>
         <CardContent className="p-6">
@@ -215,6 +278,36 @@ export default function PersonDetail() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus <strong>{person.name}</strong>?
+              <br />
+              Data ini akan dinonaktifkan dan tidak akan muncul di daftar orang.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

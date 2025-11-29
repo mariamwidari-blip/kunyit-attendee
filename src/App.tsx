@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import PeopleList from "./pages/PeopleList";
 import PersonDetail from "./pages/PersonDetail";
 import AddPerson from "./pages/AddPerson";
+import EditPerson from "./pages/EditPerson";
 import Attendance from "./pages/Attendance";
 import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/people" element={<PeopleList />} />
               <Route path="/person/:id" element={<PersonDetail />} />
               <Route path="/add-person" element={<AddPerson />} />
+              <Route path="/edit-person/:id" element={<EditPerson />} />
               <Route path="/attendance" element={<Attendance />} />
               <Route path="/events" element={<Events />} />
             </Route>

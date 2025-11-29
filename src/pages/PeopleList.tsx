@@ -3,10 +3,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, User, Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, User, Plus, MoreVertical, Trash2, Eye, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Person {
   id: string;
@@ -22,6 +39,8 @@ export default function PeopleList() {
   const [filteredPeople, setFilteredPeople] = useState<Person[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,6 +76,29 @@ export default function PeopleList() {
       console.error("Error loading people:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!personToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("people")
+        .update({ is_active: false })
+        .eq("id", personToDelete.id);
+
+      if (error) throw error;
+
+      toast.success(`${personToDelete.name} berhasil dihapus`);
+      setPersonToDelete(null);
+      loadPeople();
+    } catch (error: any) {
+      console.error("Error deleting person:", error);
+      toast.error(error.message || "Gagal menghapus orang");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -109,32 +151,63 @@ export default function PeopleList() {
         {filteredPeople.map((person) => (
           <Card
             key={person.id}
-            className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]"
-            onClick={() => navigate(`/person/${person.id}`)}
+            className="transition-all hover:shadow-md"
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-primary/20">
-                  <AvatarImage src={person.photo_url || ""} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {person.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{person.name}</h3>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {person.email || "Tidak ada email"}
-                  </p>
-                  {person.department && (
-                    <p className="text-xs text-muted-foreground">{person.department}</p>
-                  )}
+                <div
+                  className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                  onClick={() => navigate(`/person/${person.id}`)}
+                >
+                  <Avatar className="h-12 w-12 border-2 border-primary/20">
+                    <AvatarImage src={person.photo_url || ""} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {person.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{person.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {person.email || "Tidak ada email"}
+                    </p>
+                    {person.department && (
+                      <p className="text-xs text-muted-foreground">{person.department}</p>
+                    )}
+                  </div>
                 </div>
-                <User className="h-5 w-5 text-muted-foreground" />
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/person/${person.id}`)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Lihat Detail
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/edit-person/${person.id}`)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPersonToDelete(person);
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Hapus
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardContent>
           </Card>
@@ -146,6 +219,29 @@ export default function PeopleList() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!personToDelete} onOpenChange={() => setPersonToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus <strong>{personToDelete?.name}</strong>?
+              <br />
+              Data ini akan dinonaktifkan dan tidak akan muncul di daftar orang.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
