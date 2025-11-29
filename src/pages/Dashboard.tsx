@@ -1,10 +1,29 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Users, CheckCircle, Clock, Calendar, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -63,7 +82,7 @@ export default function Dashboard() {
       if (error) throw error;
 
       setEvents(data || []);
-      
+
       // Auto-select active event or most recent
       const activeEvent = data?.find((e) => e.is_active);
       if (activeEvent) {
@@ -116,18 +135,20 @@ export default function Dashboard() {
 
       const { data, error } = await supabase
         .from("attendance_records")
-        .select(`
+        .select(
+          `
           id,
           check_in_time,
           method,
           person:people(id, name, department)
-        `)
+        `
+        )
         .eq("event_id", eventId)
         .order("check_in_time", { ascending: false });
 
       if (error) throw error;
 
-      setAttendance(data as unknown as AttendanceRecord[] || []);
+      setAttendance((data as unknown as AttendanceRecord[]) || []);
     } catch (error) {
       console.error("Error loading attendance:", error);
     } finally {
@@ -171,9 +192,11 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Ringkasan absensi berdasarkan event</p>
+          <p className="text-muted-foreground">
+            Ringkasan absensi berdasarkan event
+          </p>
         </div>
-        
+
         {/* Event Filter */}
         <div className="w-full sm:w-64">
           <Select value={selectedEventId} onValueChange={setSelectedEventId}>
@@ -200,9 +223,13 @@ export default function Dashboard() {
       {selectedEvent && (
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           <Calendar className="h-4 w-4" />
-          {format(new Date(selectedEvent.event_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+          {format(new Date(selectedEvent.event_date), "EEEE, dd MMMM yyyy", {
+            locale: localeId,
+          })}
           {selectedEvent.is_active && (
-            <Badge variant="secondary" className="ml-2">Aktif</Badge>
+            <Badge variant="secondary" className="ml-2">
+              Aktif
+            </Badge>
           )}
         </div>
       )}
@@ -233,14 +260,27 @@ export default function Dashboard() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {statCards.map((card) => (
-            <Card key={card.title} className="transition-shadow hover:shadow-md">
+            <Card
+              key={card.title}
+              className="transition-shadow hover:shadow-md"
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.icon className={`h-4 w-4 ${card.className || "text-muted-foreground"}`} />
+                <CardTitle className="text-sm font-medium">
+                  {card.title}
+                </CardTitle>
+                <card.icon
+                  className={`h-4 w-4 ${
+                    card.className || "text-muted-foreground"
+                  }`}
+                />
               </CardHeader>
               <CardContent>
-                <div className={`text-3xl font-bold ${card.className || ""}`}>{card.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+                <div className={`text-3xl font-bold ${card.className || ""}`}>
+                  {card.value}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {card.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -272,26 +312,45 @@ export default function Dashboard() {
                     <TableRow>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Nama</TableHead>
-                      <TableHead className="hidden sm:table-cell">Departemen</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Departemen
+                      </TableHead>
                       <TableHead>Waktu</TableHead>
-                      <TableHead className="hidden sm:table-cell">Metode</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Metode
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {attendance.map((record, index) => (
                       <TableRow key={record.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{record.person?.name || "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell>
+                          {record.person?.name || "-"}
+                          <p className="sm:hidden text-xs text-muted-foreground">
+                            {record.person?.department || "-"}
+                          </p>
+                        </TableCell>
                         <TableCell className="hidden sm:table-cell">
                           {record.person?.department || "-"}
                         </TableCell>
                         <TableCell>
                           {record.check_in_time
-                            ? format(new Date(record.check_in_time), "HH:mm", { locale: localeId })
+                            ? format(new Date(record.check_in_time), "HH:mm", {
+                                locale: localeId,
+                              })
                             : "-"}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          <Badge variant={record.method === "qr_scan" ? "default" : "secondary"}>
+                          <Badge
+                            variant={
+                              record.method === "qr_scan"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
                             {record.method === "qr_scan" ? "QR" : "Manual"}
                           </Badge>
                         </TableCell>

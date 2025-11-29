@@ -19,7 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, User, Plus, MoreVertical, Trash2, Eye, Edit } from "lucide-react";
+import {
+  Search,
+  User,
+  Plus,
+  MoreVertical,
+  Trash2,
+  Eye,
+  Edit,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -149,10 +157,7 @@ export default function PeopleList() {
 
       <div className="space-y-3">
         {filteredPeople.map((person) => (
-          <Card
-            key={person.id}
-            className="transition-all hover:shadow-md"
-          >
+          <Card key={person.id} className="transition-all hover:shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div
@@ -172,11 +177,11 @@ export default function PeopleList() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{person.name}</h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {person.email || "Tidak ada email"}
-                    </p>
+
                     {person.department && (
-                      <p className="text-xs text-muted-foreground">{person.department}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {person.department}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -188,11 +193,15 @@ export default function PeopleList() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/person/${person.id}`)}>
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/person/${person.id}`)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       Lihat Detail
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(`/edit-person/${person.id}`)}>
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/edit-person/${person.id}`)}
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
@@ -220,12 +229,16 @@ export default function PeopleList() {
         )}
       </div>
 
-      <AlertDialog open={!!personToDelete} onOpenChange={() => setPersonToDelete(null)}>
+      <AlertDialog
+        open={!!personToDelete}
+        onOpenChange={() => setPersonToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Hapus</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus <strong>{personToDelete?.name}</strong>?
+              Apakah Anda yakin ingin menghapus{" "}
+              <strong>{personToDelete?.name}</strong>?
               <br />
               Data ini akan dinonaktifkan dan tidak akan muncul di daftar orang.
             </AlertDialogDescription>

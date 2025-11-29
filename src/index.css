@@ -106,6 +106,10 @@ Color Palette:
     @apply border-border;
   }
 
+  html {
+    font-size: 14px;
+  }
+
   body {
     @apply bg-background text-foreground;
   }

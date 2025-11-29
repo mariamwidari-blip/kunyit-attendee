@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -90,7 +96,10 @@ export default function Events() {
     try {
       // If activating, first deactivate all other events
       if (!currentStatus) {
-        await supabase.from("events").update({ is_active: false }).neq("id", eventId);
+        await supabase
+          .from("events")
+          .update({ is_active: false })
+          .neq("id", eventId);
       }
 
       const { error } = await supabase
@@ -110,7 +119,10 @@ export default function Events() {
 
   const deleteEvent = async (eventId: string) => {
     try {
-      const { error } = await supabase.from("events").delete().eq("id", eventId);
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventId);
 
       if (error) throw error;
 
@@ -128,7 +140,9 @@ export default function Events() {
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Kelola Event</h2>
-        <p className="text-muted-foreground">Buat dan kelola event untuk absensi</p>
+        <p className="text-muted-foreground">
+          Buat dan kelola event untuk absensi
+        </p>
       </div>
 
       {/* Active Event Banner */}
@@ -141,7 +155,11 @@ export default function Events() {
                 <div>
                   <p className="font-semibold text-lg">{activeEvent.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(activeEvent.event_date), "EEEE, dd MMMM yyyy", { locale: id })}
+                    {format(
+                      new Date(activeEvent.event_date),
+                      "EEEE, dd MMMM yyyy",
+                      { locale: id }
+                    )}
                   </p>
                 </div>
               </div>
@@ -248,7 +266,11 @@ export default function Events() {
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(event.event_date), "EEEE, dd MMMM yyyy", { locale: id })}
+                        {format(
+                          new Date(event.event_date),
+                          "EEEE, dd MMMM yyyy",
+                          { locale: id }
+                        )}
                       </p>
                     </div>
                   </div>
@@ -274,7 +296,11 @@ export default function Events() {
                     )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={event.is_active}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={event.is_active}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>
@@ -282,13 +308,15 @@ export default function Events() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Hapus Event?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Tindakan ini tidak dapat dibatalkan. Event "{event.name}" akan dihapus
-                            permanen.
+                            Tindakan ini tidak dapat dibatalkan. Event "
+                            {event.name}" akan dihapus permanen.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Batal</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteEvent(event.id)}>
+                          <AlertDialogAction
+                            onClick={() => deleteEvent(event.id)}
+                          >
                             Hapus
                           </AlertDialogAction>
                         </AlertDialogFooter>
