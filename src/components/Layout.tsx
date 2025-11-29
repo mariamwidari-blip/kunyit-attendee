@@ -1,7 +1,15 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Home, Users, UserPlus, QrCode, LogOut, BarChart3, Calendar } from "lucide-react";
+import {
+  Home,
+  Users,
+  UserPlus,
+  QrCode,
+  LogOut,
+  BarChart3,
+  Calendar,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 export default function Layout() {
@@ -42,7 +50,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto p-4 pb-20">
+      <main className="container mx-auto p-4 pb-28">
         <Outlet />
       </main>
 
