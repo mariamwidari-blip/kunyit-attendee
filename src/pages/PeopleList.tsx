@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, User } from "lucide-react";
+import { Search, User, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface Person {
   id: string;
@@ -83,9 +84,15 @@ export default function PeopleList() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Daftar Orang</h2>
-        <p className="text-muted-foreground">Total: {people.length} orang</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Daftar Orang</h2>
+          <p className="text-muted-foreground">Total: {people.length} orang</p>
+        </div>
+        <Button onClick={() => navigate("/add-person")}>
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah
+        </Button>
       </div>
 
       <div className="relative">
