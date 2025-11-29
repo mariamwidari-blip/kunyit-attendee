@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,58 +10,71 @@ interface QRScannerProps {
 }
 
 export default function QRScanner({ onScan, onClose }: QRScannerProps) {
-  const [scanning, setScanning] = useState(false);
-  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string>("");
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const hasScannedRef = useRef(false);
+  const isStoppingRef = useRef(false);
+
+  const stopScanner = useCallback(async () => {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+    
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        if (state === 2) { // SCANNING state
+          await scannerRef.current.stop();
+        }
+        scannerRef.current.clear();
+      } catch (err) {
+        console.error("Error stopping scanner:", err);
+      } finally {
+        scannerRef.current = null;
+      }
+    }
+  }, []);
+
+  const handleClose = useCallback(async () => {
+    await stopScanner();
+    onClose();
+  }, [stopScanner, onClose]);
 
   useEffect(() => {
+    const startScanner = async () => {
+      try {
+        const scanner = new Html5Qrcode("qr-reader");
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          async (decodedText) => {
+            // Prevent multiple scans
+            if (hasScannedRef.current) return;
+            hasScannedRef.current = true;
+            
+            await stopScanner();
+            onScan(decodedText);
+          },
+          () => {
+            // Ignore scan errors
+          }
+        );
+      } catch (err: any) {
+        console.error("Error starting scanner:", err);
+        setError("Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.");
+      }
+    };
+
     startScanner();
+
     return () => {
       stopScanner();
     };
-  }, []);
-
-  const startScanner = async () => {
-    try {
-      const scanner = new Html5Qrcode("qr-reader");
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          onScan(decodedText);
-          stopScanner();
-        },
-        (errorMessage) => {
-        }
-      );
-      setScanning(true);
-    } catch (err: any) {
-      console.error("Error starting scanner:", err);
-      setError("Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.");
-    }
-  };
-
-  const stopScanner = async () => {
-    if (scannerRef.current && scanning) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-        scannerRef.current = null;
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
-      }
-    }
-  };
-
-  const handleClose = async () => {
-    await stopScanner();
-    onClose();
-  };
+  }, [onScan, stopScanner]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
