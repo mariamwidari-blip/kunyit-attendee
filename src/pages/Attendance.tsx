@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { QrCode, User, Loader2, CheckCircle, Camera } from "lucide-react";
+import { QrCode, User, Loader2, CheckCircle, Camera, AlertCircle, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import QRScanner from "@/components/QRScanner";
 
 interface Person {
@@ -16,16 +19,42 @@ interface Person {
   qr_code: string;
 }
 
+interface Event {
+  id: string;
+  name: string;
+  event_date: string;
+}
+
 export default function Attendance() {
   const [qrInput, setQrInput] = useState("");
   const [selectedPerson, setSelectedPerson] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [activeEvent, setActiveEvent] = useState<Event | null>(null);
+  const [loadingEvent, setLoadingEvent] = useState(true);
 
   useEffect(() => {
+    loadActiveEvent();
     loadPeople();
   }, []);
+
+  const loadActiveEvent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, name, event_date")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+      setActiveEvent(data);
+    } catch (error) {
+      console.error("Error loading active event:", error);
+    } finally {
+      setLoadingEvent(false);
+    }
+  };
 
   const loadPeople = async () => {
     const { data } = await supabase
@@ -37,6 +66,11 @@ export default function Attendance() {
   };
 
   const markAttendance = async (personId: string, method: "qr_scan" | "manual") => {
+    if (!activeEvent) {
+      toast.error("Tidak ada event aktif");
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: person } = await supabase
@@ -50,23 +84,22 @@ export default function Attendance() {
         return;
       }
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
+      // Check if already attended this event
       const { data: existingAttendance } = await supabase
         .from("attendance_records")
         .select("id")
         .eq("person_id", personId)
-        .gte("check_in_time", today.toISOString())
-        .single();
+        .eq("event_id", activeEvent.id)
+        .maybeSingle();
 
       if (existingAttendance) {
-        toast.error(`${person.name} sudah absen hari ini`);
+        toast.error(`${person.name} sudah absen di event ini`);
         return;
       }
 
       const { error } = await supabase.from("attendance_records").insert({
         person_id: personId,
+        event_id: activeEvent.id,
         method,
       });
 
@@ -92,6 +125,11 @@ export default function Attendance() {
   };
 
   const processQRCode = async (qrCode: string) => {
+    if (!activeEvent) {
+      toast.error("Tidak ada event aktif");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -130,6 +168,44 @@ export default function Attendance() {
     await markAttendance(selectedPerson, "manual");
   };
 
+  if (loadingEvent) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // No active event - show prompt to create/start one
+  if (!activeEvent) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
+          <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
+        </div>
+
+        <Card className="border-dashed">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Tidak Ada Event Aktif</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm">
+                Untuk memulai absensi, Anda harus membuat atau mengaktifkan event terlebih dahulu.
+              </p>
+              <Button asChild>
+                <Link to="/events">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Kelola Event
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {scanning && <QRScanner onScan={handleScanSuccess} onClose={() => setScanning(false)} />}
@@ -138,6 +214,21 @@ export default function Attendance() {
         <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
         <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
       </div>
+
+      {/* Active Event Info */}
+      <Card className="border-primary bg-primary/10">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 rounded-full bg-success animate-pulse" />
+            <div>
+              <p className="font-semibold">{activeEvent.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {format(new Date(activeEvent.event_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="qr" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

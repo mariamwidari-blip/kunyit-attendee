@@ -19,6 +19,7 @@ export type Database = {
           check_in_time: string | null
           check_out_time: string | null
           created_at: string | null
+          event_id: string | null
           id: string
           method: string | null
           notes: string | null
@@ -29,6 +30,7 @@ export type Database = {
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string | null
+          event_id?: string | null
           id?: string
           method?: string | null
           notes?: string | null
@@ -39,6 +41,7 @@ export type Database = {
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string | null
+          event_id?: string | null
           id?: string
           method?: string | null
           notes?: string | null
@@ -47,6 +50,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "attendance_records_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "attendance_records_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -54,6 +64,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          event_date: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          event_date: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          event_date?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       people: {
         Row: {

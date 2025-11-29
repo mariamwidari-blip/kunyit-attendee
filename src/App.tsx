@@ -12,6 +12,7 @@ import PeopleList from "./pages/PeopleList";
 import PersonDetail from "./pages/PersonDetail";
 import AddPerson from "./pages/AddPerson";
 import Attendance from "./pages/Attendance";
+import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/person/:id" element={<PersonDetail />} />
               <Route path="/add-person" element={<AddPerson />} />
               <Route path="/attendance" element={<Attendance />} />
+              <Route path="/events" element={<Events />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
