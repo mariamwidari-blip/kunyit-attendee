@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Home, Users, UserPlus, QrCode, LogOut, BarChart3 } from "lucide-react";
+import { Home, Users, UserPlus, QrCode, LogOut, BarChart3, Calendar } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 export default function Layout() {
@@ -20,9 +20,9 @@ export default function Layout() {
 
   const navItems = [
     { to: "/dashboard", icon: Home, label: "Dashboard" },
-    { to: "/people", icon: Users, label: "Daftar" },
+    { to: "/events", icon: Calendar, label: "Event" },
     { to: "/attendance", icon: QrCode, label: "Absen" },
-    { to: "/add-person", icon: UserPlus, label: "Tambah" },
+    { to: "/people", icon: Users, label: "Daftar" },
   ];
 
   return (
