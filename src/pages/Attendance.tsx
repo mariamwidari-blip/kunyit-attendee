@@ -1,13 +1,35 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { QrCode, User, Loader2, CheckCircle, Camera, AlertCircle, Calendar, Mail, Building2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  QrCode,
+  User,
+  Loader2,
+  CheckCircle,
+  Camera,
+  AlertCircle,
+  Calendar,
+  Mail,
+  Building2,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -23,7 +45,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Person {
   id: string;
   name: string;
-  qr_code: string;
+  qr_code?: string;
   email?: string | null;
   department?: string | null;
   photo_url?: string | null;
@@ -77,7 +99,10 @@ export default function Attendance() {
     setPeople(data || []);
   };
 
-  const markAttendance = async (personId: string, method: "qr_scan" | "manual") => {
+  const markAttendance = async (
+    personId: string,
+    method: "qr_scan" | "manual"
+  ) => {
     if (!activeEvent) {
       toast.error("Tidak ada event aktif");
       return;
@@ -194,16 +219,21 @@ export default function Attendance() {
       <div className="space-y-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
-          <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
+          <p className="text-muted-foreground">
+            Catat kehadiran dengan QR atau manual
+          </p>
         </div>
 
         <Card className="border-dashed">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Tidak Ada Event Aktif</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Tidak Ada Event Aktif
+              </h3>
               <p className="text-muted-foreground mb-6 max-w-sm">
-                Untuk memulai absensi, Anda harus membuat atau mengaktifkan event terlebih dahulu.
+                Untuk memulai absensi, Anda harus membuat atau mengaktifkan
+                event terlebih dahulu.
               </p>
               <Button asChild>
                 <Link to="/events">
@@ -220,11 +250,18 @@ export default function Attendance() {
 
   return (
     <div className="space-y-4">
-      {scanning && <QRScanner onScan={handleScanSuccess} onClose={() => setScanning(false)} />}
+      {scanning && (
+        <QRScanner
+          onScan={handleScanSuccess}
+          onClose={() => setScanning(false)}
+        />
+      )}
 
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Absensi</h2>
-        <p className="text-muted-foreground">Catat kehadiran dengan QR atau manual</p>
+        <p className="text-muted-foreground">
+          Catat kehadiran dengan QR atau manual
+        </p>
       </div>
 
       {/* Active Event Info */}
@@ -235,7 +272,11 @@ export default function Attendance() {
             <div>
               <p className="font-semibold">{activeEvent.name}</p>
               <p className="text-sm text-muted-foreground">
-                {format(new Date(activeEvent.event_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                {format(
+                  new Date(activeEvent.event_date),
+                  "EEEE, dd MMMM yyyy",
+                  { locale: localeId }
+                )}
               </p>
             </div>
           </div>
@@ -279,7 +320,9 @@ export default function Attendance() {
                     <span className="w-full border-t" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">atau</span>
+                    <span className="bg-card px-2 text-muted-foreground">
+                      atau
+                    </span>
                   </div>
                 </div>
 
@@ -330,7 +373,10 @@ export default function Attendance() {
               <form onSubmit={handleManualSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="person">Pilih Orang</Label>
-                  <Select value={selectedPerson} onValueChange={setSelectedPerson}>
+                  <Select
+                    value={selectedPerson}
+                    onValueChange={setSelectedPerson}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih orang..." />
                     </SelectTrigger>
@@ -392,26 +438,28 @@ export default function Attendance() {
                 <div className="text-center">
                   <h3 className="text-2xl font-bold">{successPerson.name}</h3>
                   {successPerson.department && (
-                    <p className="text-muted-foreground">{successPerson.department}</p>
+                    <p className="text-muted-foreground">
+                      {successPerson.department}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* Details */}
               <div className="space-y-3">
-                {successPerson.email && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <Mail className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm">{successPerson.email}</span>
-                  </div>
-                )}
-
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10">
                   <Calendar className="h-5 w-5 text-success" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Event: {activeEvent?.name}</p>
+                    <p className="text-sm font-medium">
+                      Event: {activeEvent?.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {activeEvent && format(new Date(activeEvent.event_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                      {activeEvent &&
+                        format(
+                          new Date(activeEvent.event_date),
+                          "EEEE, dd MMMM yyyy",
+                          { locale: localeId }
+                        )}
                     </p>
                   </div>
                 </div>
