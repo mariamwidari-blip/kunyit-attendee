@@ -27,11 +27,14 @@ import {
   Trash2,
   Eye,
   Edit,
+  Download,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { generateStyledQRCode } from "@/lib/qrcode-generator";
+import { jsPDF } from "jspdf";
 
 interface Person {
   id: string;
@@ -40,6 +43,7 @@ interface Person {
   department: string | null;
   photo_url: string | null;
   is_active: boolean;
+  qr_code: string | null;
 }
 
 export default function PeopleList() {
@@ -108,6 +112,129 @@ export default function PeopleList() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleDownloadQRCode = async (person: Person) => {
+    try {
+      toast.loading("Membuat ID card...");
+
+      // Generate styled QR code using the same API as PersonDetail
+      const qrDataUrl = await generateStyledQRCode({
+        data: person.qr_code,
+        size: 1000,
+        colorDark: "#1A1A1A",
+        colorLight: "#FFFFFF",
+        bodyType: "dot",
+        eyeFrameType: "frame13",
+        eyeBallType: "ball15",
+      });
+
+      // Load template and QR code images
+      const [templateImg, qrImg] = await Promise.all([
+        loadImage("/id_card_template.jpg"),
+        loadImage(qrDataUrl),
+      ]);
+
+      // Create canvas and combine images
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Failed to get canvas context");
+
+      // Set canvas size to match template
+      canvas.width = templateImg.width;
+      canvas.height = templateImg.height;
+
+      // Draw template
+      ctx.drawImage(templateImg, 0, 0);
+
+      // Draw QR code in the placeholder area (bottom right)
+      // Adjust these coordinates based on your template layout
+      const qrSize = 180; // Size of QR code
+      const qrX = canvas.width - qrSize - 51; // 50px from right edge
+      const qrY = canvas.height - qrSize - 35; // 50px from bottom edge
+      const borderRadius = 10; // Border radius in pixels
+
+      // Create rounded rectangle clipping path
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(qrX + borderRadius, qrY);
+      ctx.lineTo(qrX + qrSize - borderRadius, qrY);
+      ctx.quadraticCurveTo(qrX + qrSize, qrY, qrX + qrSize, qrY + borderRadius);
+      ctx.lineTo(qrX + qrSize, qrY + qrSize - borderRadius);
+      ctx.quadraticCurveTo(
+        qrX + qrSize,
+        qrY + qrSize,
+        qrX + qrSize - borderRadius,
+        qrY + qrSize
+      );
+      ctx.lineTo(qrX + borderRadius, qrY + qrSize);
+      ctx.quadraticCurveTo(qrX, qrY + qrSize, qrX, qrY + qrSize - borderRadius);
+      ctx.lineTo(qrX, qrY + borderRadius);
+      ctx.quadraticCurveTo(qrX, qrY, qrX + borderRadius, qrY);
+      ctx.closePath();
+      ctx.clip();
+
+      // Draw QR code with clipping applied
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+      ctx.restore();
+
+      // Add person's name and department text below the QR code
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 10px Arial";
+      ctx.textAlign = "center";
+
+      // Calculate center position of QR code
+      const qrCenterX = qrX + qrSize / 2;
+
+      // Draw name below QR code
+      const nameY = qrY + qrSize + 15; // 20px below QR code
+      ctx.fillText(person.name.toUpperCase(), qrCenterX, nameY);
+
+      // Draw department if available
+      if (person.department) {
+        ctx.font = "9px Arial";
+        ctx.fillText(person.department, qrCenterX, nameY + 10); // 20px below name
+      }
+
+      // Convert canvas to blob
+      const finalBlob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
+      });
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? "landscape" : "portrait",
+        unit: "px",
+        format: [canvas.width, canvas.height],
+      });
+
+      // Add image to PDF
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
+
+      // Download PDF
+      pdf.save(`id-card-${person.name.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+
+      // Clean up
+      URL.revokeObjectURL(qrDataUrl);
+
+      toast.dismiss();
+      toast.success(`ID Card untuk ${person.name} berhasil diunduh`);
+    } catch (error: any) {
+      console.error("Error generating ID card:", error);
+      toast.dismiss();
+      toast.error("Gagal membuat ID Card");
+    }
+  };
+
+  const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
   };
 
   if (loading) {
@@ -204,6 +331,15 @@ export default function PeopleList() {
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadQRCode(person);
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download ID Card
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => {

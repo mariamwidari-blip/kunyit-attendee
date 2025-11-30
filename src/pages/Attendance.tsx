@@ -6,17 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { QrCode, User, Loader2, CheckCircle, Camera, AlertCircle, Calendar } from "lucide-react";
+import { QrCode, User, Loader2, CheckCircle, Camera, AlertCircle, Calendar, Mail, Building2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import QRScanner from "@/components/QRScanner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Person {
   id: string;
   name: string;
   qr_code: string;
+  email?: string | null;
+  department?: string | null;
+  photo_url?: string | null;
 }
 
 interface Event {
@@ -33,6 +43,8 @@ export default function Attendance() {
   const [scanning, setScanning] = useState(false);
   const [activeEvent, setActiveEvent] = useState<Event | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
+  const [successPerson, setSuccessPerson] = useState<Person | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     loadActiveEvent();
@@ -59,7 +71,7 @@ export default function Attendance() {
   const loadPeople = async () => {
     const { data } = await supabase
       .from("people")
-      .select("id, name, qr_code")
+      .select("id, name, qr_code, email, department, photo_url")
       .eq("is_active", true)
       .order("name");
     setPeople(data || []);
@@ -75,7 +87,7 @@ export default function Attendance() {
     try {
       const { data: person } = await supabase
         .from("people")
-        .select("name")
+        .select("id, name, email, department, photo_url")
         .eq("id", personId)
         .single();
 
@@ -105,10 +117,10 @@ export default function Attendance() {
 
       if (error) throw error;
 
-      toast.success(`${person.name} berhasil absen!`, {
-        icon: <CheckCircle className="h-5 w-5 text-success" />,
-      });
-      
+      // Show success modal instead of toast
+      setSuccessPerson(person);
+      setShowSuccessModal(true);
+
       setQrInput("");
       setSelectedPerson("");
     } catch (error: any) {
@@ -350,6 +362,72 @@ export default function Attendance() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-success">
+              <CheckCircle className="h-6 w-6" />
+              Absensi Berhasil!
+            </DialogTitle>
+          </DialogHeader>
+
+          {successPerson && (
+            <div className="space-y-4">
+              {/* Person Info */}
+              <div className="flex flex-col items-center gap-4 py-4">
+                <Avatar className="h-24 w-24 border-4 border-success/20">
+                  <AvatarImage src={successPerson.photo_url || ""} />
+                  <AvatarFallback className="bg-success/10 text-success text-2xl">
+                    {successPerson.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold">{successPerson.name}</h3>
+                  {successPerson.department && (
+                    <p className="text-muted-foreground">{successPerson.department}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-3">
+                {successPerson.email && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm">{successPerson.email}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10">
+                  <Calendar className="h-5 w-5 text-success" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Event: {activeEvent?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activeEvent && format(new Date(activeEvent.event_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full"
+                size="lg"
+              >
+                Tutup
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
